@@ -6,7 +6,7 @@ services:
     #   context: ./npm-cli
     #   args:
     #     - NODE_ENV=development
-    command: bash -c "pnpm i && npm start"
+    #command: bash -c "pnpm i && npm start"
     ports: 
         #TCP - RTMP
         - 1935:1935
