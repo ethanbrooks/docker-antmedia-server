@@ -1,0 +1,64 @@
+version: '3.7'
+services:
+  node:
+    image:  antmedia-server:latest
+    # build:
+    #   context: ./npm-cli
+    #   args:
+    #     - NODE_ENV=development
+    command: bash -c "pnpm i && npm start"
+    ports: 
+        #TCP - RTMP
+        - 1935:1935
+        #TCP - HTTP
+        - 5080:5080
+        #TCP - HTTPS
+        - 5443:5443
+        #UDP - WebRTC
+        - "5000-65000:5000-65000/udp"
+        #TCP:5000-65000 (You need to open this range in only cluster mode for internal network. It should not be open to public.)
+    deploy:
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.antmedia.conduit3.rule: Host(`antmedia.conduit3.com`)
+        traefik.http.routers.antmedia.tls: "true"          
+        traefik.http.routers.antmedia.entrypoints: https
+        traefik.http.routers.antmedia.service: node
+        traefik.http.services.antmedia.loadbalancer.server.port: 4200
+  #      traefik.tcp.routers.nodered-debug.rule: Host(`node-debug.conduit3.com`) 
+  #      traefik.tcp.routers.nodered-debug.entrypoints: http
+  #      traefik.tcp.routers.nodered-debug.service: nodered-debug
+  #      traefik.tcp.services.nodered-debug.loadbalancer.server.port: 9229
+      replicas: 1
+      placement:
+          constraints:
+              - node.role == manager
+          preferences:
+              - spread: node.labels.zone
+      update_config:
+          parallelism: 1
+          delay: 10s
+      resources:
+          limits:
+              cpus: '1'
+              memory: 500M
+          reservations:
+  #             cpus: '1'
+              memory: 100M
+      restart_policy:
+          condition: on-failure
+          delay: 5s
+          max_attempts: 3
+          window: 10s
+#    volumes:
+    environment:
+      - NODE_ENV=development
+    healthcheck:
+      disable: true
+    networks:
+      docker-Traefik_private:
+    user: root
+#    working_dir: /opt/node_app/app/
+networks:
+  docker-Traefik_private:
+    external: true
